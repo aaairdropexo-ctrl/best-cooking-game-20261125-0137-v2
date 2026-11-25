@@ -19,6 +19,18 @@ NB.text = function (ctx, s, x, y, size, color, align, weight) {
   ctx.fillText(s, x, y);
 };
 
+// Largest size (from startSize down to minSize) at which the text fits
+// maxW pixels, so a long VIP sentence never overflows its bubble. The
+// bubble wants 20px, but the sentence is long and the ticket is only
+// 270px wide — the honest max is whatever fits, measured, not wished.
+NB.fitSize = function (ctx, s, maxW, startSize, minSize) {
+  for (let size = startSize; size >= minSize; size--) {
+    ctx.font = 'bold ' + size + 'px Arial, Helvetica, sans-serif';
+    if (ctx.measureText(s).width <= maxW) return size;
+  }
+  return minSize;
+};
+
 // One ingredient drawn as a small appetising icon.
 NB.drawIngredientIcon = function (ctx, id, x, y, s) {
   const P = NB.PAL;
@@ -349,18 +361,36 @@ NB.drawBoard = function (state) {
     const nameSize = order.vip ? 16 : 19;
     NB.text(ctx, dish.name, B.x + 24, y + 24, nameSize, P.cream, 'left', 'bold');
     NB.text(ctx, order.vip ? '$' + order.value + ' +TIP' : '$' + order.value, B.x + B.w - 26, y + 24, nameSize, P.gold, 'right', 'bold');
-    // Component chips.
+    // Component chips. A VIP ticket's chips shrink a little (40 -> 34
+    // tall) so the bigger portrait + bubble fit below them without
+    // crowding the slot.
+    const chipH = order.vip ? 34 : 40;
+    const chipCy = order.vip ? y + 64 : y + 66;
+    const chipIcon = order.vip ? 24 : 26;
     order.needs.forEach(function (need, k) {
       const cx = B.x + 30 + k * 64;
-      const cy = y + 66;
+      const cy = chipCy;
       ctx.fillStyle = need.done ? '#2c4630' : '#241a20';
-      NB.roundRect(ctx, cx - 26, cy - 20, 52, 40, 8);
+      NB.roundRect(ctx, cx - 26, cy - chipH / 2, 52, chipH, 8);
       ctx.fill();
       ctx.strokeStyle = need.done ? P.green : '#6b4a3a';
       ctx.lineWidth = 2;
-      NB.roundRect(ctx, cx - 26, cy - 20, 52, 40, 8);
+      NB.roundRect(ctx, cx - 26, cy - chipH / 2, 52, chipH, 8);
       ctx.stroke();
-      NB.drawIngredientIcon(ctx, need.ing, cx, cy - 2, 26);
+      NB.drawIngredientIcon(ctx, need.ing, cx, cy - 2, chipIcon);
+      if (need.prep === 'drizzled') {
+        // The drizzle chip: same greens icon, marked with a red oil
+        // drop at the top left so the two greens chips never read as
+        // one (the green check lives at the top right when done).
+        ctx.fillStyle = P.chili;
+        ctx.beginPath();
+        ctx.arc(cx - 19, cy - chipH / 2 + 1, 6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(cx - 19, cy - chipH / 2, 2, 0, Math.PI * 2);
+        ctx.fill();
+      }
       if (need.done) {
         ctx.fillStyle = P.green;
         ctx.beginPath();
@@ -371,22 +401,31 @@ NB.drawBoard = function (state) {
     });
     // A VIP ticket carries a face and a two-line bubble: her portrait
     // on the left, her sentence and its continuation beside it. Dark
-    // text on cream, big enough to survive the shrink to 768px.
+    // text on cream, big enough to survive the shrink to 768px. The
+    // portrait is 44px now (was 26): it spans the bubble's full height
+    // and just clears the chips above (2px) and the heat bar below
+    // (1px) — the slot is 136px tall and there is no more room, so the
+    // bubble text is the largest size that fits its width, measured.
     let barY = y + 108;
     let barH = 12;
     if (order.vip && order.story) {
       ctx.fillStyle = '#fff3dc';
-      NB.roundRect(ctx, B.x + 16, y + 88, B.w - 32, 32, 10);
+      NB.roundRect(ctx, B.x + 16, y + 85, B.w - 32, 41, 10);
       ctx.fill();
       ctx.strokeStyle = P.gold;
       ctx.lineWidth = 2;
-      NB.roundRect(ctx, B.x + 16, y + 88, B.w - 32, 32, 10);
+      NB.roundRect(ctx, B.x + 16, y + 85, B.w - 32, 41, 10);
       ctx.stroke();
-      NB.drawNursePortrait(ctx, B.x + 34, y + 104, 13);
-      NB.text(ctx, order.story, B.x + 54, y + 98, 14, '#241a12', 'left', 'bold');
-      NB.text(ctx, NB.vipBubbleLine(order), B.x + 54, y + 112, 14, '#6b4222', 'left', 'bold');
-      barY = y + 124;
-      barH = 10;
+      NB.drawNursePortrait(ctx, B.x + 34, y + 104, 22);
+      const tx = B.x + 60;
+      const maxW = B.x + B.w - 18 - tx;
+      const s1 = NB.fitSize(ctx, order.story, maxW, 20, 13);
+      NB.text(ctx, order.story, tx, y + 98, s1, '#241a12', 'left', 'bold');
+      const line2 = NB.vipBubbleLine(order);
+      const s2 = NB.fitSize(ctx, line2, maxW, 20, 13);
+      NB.text(ctx, line2, tx, y + 117, s2, '#6b4222', 'left', 'bold');
+      barY = y + 127;
+      barH = 8;
     }
     // Patience bar.
     const pf = NB.clamp(order.patience / order.patienceMax, 0, 1);
@@ -500,6 +539,136 @@ NB.drawWok = function (state) {
   });
 };
 
+// A plate that reads as the dish it holds: the assembled components,
+// drawn with canvas primitives, so a glance at plating tells you which
+// dish is on it. Each dish has its own silhouette — a broth pool with
+// noodle strands, a noodle nest with chicken and chili rings, a fried
+// egg on greens, a dressed salad with sesame and chili-oil drizzle.
+// A partial plate draws only the components already on it, so the
+// plate fills in as the order comes together.
+NB.drawPlatedDish = function (ctx, dish, items, cx, cy) {
+  const P = NB.PAL;
+  const has = function (ing, prep) {
+    return items.some(function (it) { return it.ing === ing && (!prep || it.prep === prep); });
+  };
+  const hasNoodles = has('noodles');
+  const hasBroth = has('broth');
+  const hasChicken = has('chicken');
+  const hasEgg = has('egg');
+  const hasChili = has('chili');
+  const hasGreens = has('greens');
+  const hasDrizzle = items.some(function (it) { return it.prep === 'drizzled'; });
+  const cold = dish && dish.cold;
+
+  // Broth pool under everything else (broth dishes only).
+  if (hasBroth) {
+    ctx.fillStyle = P.broth;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, 52, 28, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#f0a35e';
+    ctx.beginPath();
+    ctx.ellipse(cx, cy - 3, 40, 19, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Noodle nest: wavy gold strands across the plate (hot dishes).
+  if (hasNoodles) {
+    ctx.strokeStyle = P.noodle;
+    ctx.lineWidth = 5;
+    ctx.lineCap = 'round';
+    const rows = [[-12, -32, 32], [-2, -36, 36], [8, -32, 32]];
+    rows.forEach(function (r) {
+      ctx.beginPath();
+      ctx.moveTo(cx + r[1], cy + r[0]);
+      ctx.quadraticCurveTo(cx, cy + r[0] + 7, cx + r[2], cy + r[0]);
+      ctx.stroke();
+    });
+  }
+
+  // Green leaves (garden + house special + the cold salad).
+  if (hasGreens) {
+    const leaves = cold
+      ? [[-24, -6, -0.6], [-6, 8, 0.2], [14, -8, 0.5], [26, 6, -0.3]]
+      : [[-22, -8, -0.5], [2, 12, 0.3], [24, -2, 0.6]];
+    leaves.forEach(function (lf, i) {
+      ctx.fillStyle = i % 2 ? '#3d9b6e' : P.greens;
+      ctx.beginPath();
+      ctx.ellipse(cx + lf[0], cy + lf[1], 16, 6.5, lf[2], 0, Math.PI * 2);
+      ctx.fill();
+    });
+  }
+
+  // Chili-oil drizzle + sesame: dark wavy lines and white dots over
+  // the leaves. Only when the drizzled component is on the plate.
+  if (hasDrizzle) {
+    ctx.strokeStyle = '#7a3b12';
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(cx - 36, cy - 2);
+    ctx.quadraticCurveTo(cx, cy + 6, cx + 36, cy - 4);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cx - 30, cy + 12);
+    ctx.quadraticCurveTo(cx, cy + 18, cx + 30, cy + 10);
+    ctx.stroke();
+    ctx.fillStyle = '#ffffff';
+    [[-18, -12], [0, -16], [18, -8], [-8, 2], [12, 4], [24, 12]].forEach(function (d) {
+      ctx.beginPath();
+      ctx.arc(cx + d[0], cy + d[1], 2, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  }
+
+  // Chicken slices: brown with a pale stripe.
+  if (hasChicken) {
+    const slices = [[-20, 4, -0.4], [16, -10, 0.5]];
+    slices.forEach(function (s) {
+      ctx.fillStyle = P.chicken;
+      ctx.beginPath();
+      ctx.ellipse(cx + s[0], cy + s[1], 17, 10, s[2], 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#f3e3c8';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(cx + s[0] - 10, cy + s[1] - 2);
+      ctx.lineTo(cx + s[0] + 10, cy + s[1] + 2);
+      ctx.stroke();
+    });
+  }
+
+  // Fried egg: white with a yolk, top right.
+  if (hasEgg) {
+    ctx.fillStyle = P.egg;
+    ctx.beginPath();
+    ctx.ellipse(cx + 20, cy + 10, 17, 11, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = P.yolk;
+    ctx.beginPath();
+    ctx.arc(cx + 22, cy + 9, 6.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Chili rings: red rings with a dark centre, on top of everything.
+  if (hasChili) {
+    const rings = cold
+      ? [[-30, -14], [30, -12], [0, 16]]
+      : [[-34, -12], [34, -14], [-2, 18]];
+    rings.forEach(function (r) {
+      ctx.strokeStyle = P.chili;
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.arc(cx + r[0], cy + r[1], 7, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.fillStyle = '#7a1f1f';
+      ctx.beginPath();
+      ctx.arc(cx + r[0], cy + r[1], 2.5, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  }
+};
+
 NB.drawPlate = function (state) {
   const ctx = state.ctx;
   const P = NB.PAL;
@@ -523,10 +692,22 @@ NB.drawPlate = function (state) {
   ctx.beginPath();
   ctx.ellipse(L.x + L.w / 2 + slide, L.y + 88, 62, 40, 0, 0, Math.PI * 2);
   ctx.stroke();
-  state.plate.items.forEach(function (item, i) {
-    const a = -Math.PI / 2 + i * (Math.PI * 2 / Math.max(1, state.plate.items.length));
-    NB.drawIngredientIcon(ctx, item.ing, L.x + L.w / 2 + slide + Math.cos(a) * 34, L.y + 88 + Math.sin(a) * 20, 30);
-  });
+  if (state.plate.items.length > 0) {
+    let dish = null;
+    if (state.plateFor !== null) {
+      const order = state.orders.find(function (o) { return o.id === state.plateFor; });
+      if (order) dish = NB.dishById(order.dishId);
+    }
+    if (dish) {
+      NB.drawPlatedDish(ctx, dish, state.plate.items, L.x + L.w / 2 + slide, L.y + 88);
+    } else {
+      // No order targeted (should not happen): fall back to icons.
+      state.plate.items.forEach(function (item, i) {
+        const a = -Math.PI / 2 + i * (Math.PI * 2 / Math.max(1, state.plate.items.length));
+        NB.drawIngredientIcon(ctx, item.ing, L.x + L.w / 2 + slide + Math.cos(a) * 34, L.y + 88 + Math.sin(a) * 20, 30);
+      });
+    }
+  }
   // A gold star when the plate holds perfectly pulled noodles.
   if (state.plate.items.some(function (it) { return it.perfect; })) {
     NB.text(ctx, '★', L.x + L.w - 26, L.y + 46, 18, P.gold, 'center', 'bold');
@@ -723,17 +904,27 @@ NB.drawCold = function (state) {
   NB.text(ctx, 'SESAME', sx, sy, 8, '#6b4222', 'center', 'bold');
   if (state.cold.active && state.cold.item) {
     // The toss runs in the bowl: the greens ride on top, the ring
-    // counts it down beside them.
+    // counts it down beside them. The drizzle runs the same way, in
+    // red: chili oil falling over the tossed greens.
+    const kind = state.cold.kind || 'toss';
     NB.drawIngredientIcon(ctx, state.cold.item.ing, bx, by - 4, 40);
     const f = NB.clamp(state.cold.t / state.cold.dur, 0, 1);
-    ctx.strokeStyle = P.teal;
+    ctx.strokeStyle = kind === 'drizzle' ? P.chili : P.teal;
     ctx.lineWidth = 7;
     ctx.beginPath();
     ctx.arc(bx + 54, by, 18, -Math.PI / 2, -Math.PI / 2 + f * Math.PI * 2);
     ctx.stroke();
-    NB.text(ctx, 'TOSSING…', L.x + L.w / 2, L.y + 132, 14, P.teal, 'center', 'bold');
+    if (kind === 'drizzle') {
+      ctx.fillStyle = P.chili;
+      [[-10, -26], [6, -30], [18, -22]].forEach(function (d) {
+        ctx.beginPath();
+        ctx.arc(bx + d[0], by + d[1], 3, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    }
+    NB.text(ctx, kind === 'drizzle' ? 'DRIZZLING…' : 'TOSSING…', L.x + L.w / 2, L.y + 132, 14, kind === 'drizzle' ? P.chili : P.teal, 'center', 'bold');
   } else {
-    NB.text(ctx, 'Toss: chopped Greens', L.x + L.w / 2, L.y + 132, 12, '#d8b48a', 'center', 'normal');
+    NB.text(ctx, 'Toss greens · drizzle oil', L.x + L.w / 2, L.y + 132, 12, '#d8b48a', 'center', 'normal');
   }
 };
 
