@@ -1,6 +1,9 @@
-// Recipes: the six ingredients and the five dishes of the noodle bar.
+// Recipes: the six ingredients and the six dishes of the noodle bar.
 // Every ingredient has a preparation path; every dish combines them in a
-// different way, so no two orders play the same.
+// different way, so no two orders play the same. One dish is cold: it
+// never touches the wok — chopped greens tossed in chili oil and sesame
+// dressing at the cold counter, so the cook must choose a path (hot vs
+// cold) instead of queuing the same station for every ticket.
 
 // Preparation a raw ingredient needs before it can go on a plate.
 // 'none'  -> straight from the crate to the plate.
@@ -30,7 +33,9 @@ NB.finalPrep = function (ingId) {
   return 'cooked';
 };
 
-// A carried item: { ing, prep } where prep is raw | chopped | cooked | burnt.
+// A carried item: { ing, prep } where prep is raw | chopped | cooked
+// | tossed | burnt. 'tossed' is the cold path: chopped greens mixed in
+// chili oil and sesame dressing at the cold counter.
 NB.makeItem = function (ingId) {
   return { ing: ingId, prep: 'raw' };
 };
@@ -41,6 +46,7 @@ NB.itemLabel = function (item) {
   if (item.prep === 'burnt') return 'Burnt ' + ing.name;
   if (item.prep === 'raw') return ing.name;
   if (item.prep === 'chopped') return 'Chopped ' + ing.name;
+  if (item.prep === 'tossed') return 'Tossed ' + ing.name;
   return 'Cooked ' + ing.name;
 };
 
@@ -96,6 +102,16 @@ NB.DISHES = [
       { ing: 'broth', prep: 'raw' },
       { ing: 'chicken', prep: 'cooked' },
       { ing: 'greens', prep: 'chopped' }
+    ]
+  },
+  {
+    id: 'sesame-greens',
+    name: 'Sesame Greens Bowl',
+    coins: 18,
+    cold: true,
+    needs: [
+      { ing: 'chili', prep: 'chopped' },
+      { ing: 'greens', prep: 'tossed' }
     ]
   }
 ];
