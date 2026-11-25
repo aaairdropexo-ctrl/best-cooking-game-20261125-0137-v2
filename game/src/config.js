@@ -25,6 +25,10 @@ NB.CHOP_SECONDS = 1.4;
 NB.COOK_SECONDS = 3.0;
 NB.READY_WINDOW = 4.0;
 
+// Cold counter: tossing chopped greens in chili oil and sesame
+// dressing. A timer job like chopping — no timing minigame.
+NB.COLD_SECONDS = 1.8;
+
 // Noodle pull: a timing sweep at the pull station. The needle sweeps a
 // firmness meter; locking it inside the green band pulls the noodles
 // perfectly. Perfect pulls pay a bonus at serve time.
@@ -93,7 +97,10 @@ NB.LAYOUT = {
   serve: { x: 1120, y: 100, w: 146, h: 160 },
   bin: { x: 920, y: 300, w: 110, h: 76 },
   pull: { x: 560, y: 330, w: 200, h: 140 },
-  menu: { x: 780, y: 380, w: 260, h: 100 },
+  // Cold counter: below the serve window, right of the menu board —
+  // the one free rectangle that covers no decor and moves no station.
+  cold: { x: 1050, y: 296, w: 206, h: 150 },
+  menu: { x: 780, y: 380, w: 260, h: 116 },
   crates: { x: 340, y: 520, w: 912, h: 112 },
   hint: { x: 0, y: 652, w: 1280, h: 68 }
 };
