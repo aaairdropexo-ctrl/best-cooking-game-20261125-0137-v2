@@ -104,6 +104,14 @@ NB.canToss = function (item) {
   return item.ing === 'greens' && item.prep === 'chopped';
 };
 
+// Only tossed greens can be drizzled: the cold counter's second job
+// finishes the cold dish — chili oil over the tossed greens. A
+// drizzled greens is a third component, not a replacement for the
+// tossed one: the dish needs one tossed and one drizzled.
+NB.canDrizzle = function (item) {
+  return item.ing === 'greens' && item.prep === 'tossed';
+};
+
 NB.sendCookTo = function (state, station) {
   if (state.chop.active || state.pull.active || state.cold.active) return;
   state.cook.tx = station.approach.x;
@@ -186,12 +194,20 @@ NB.useStation = function (state, st) {
   }
   if (st.kind === 'cold') {
     if (state.cold.active || state.chop.active) return;
+    // A tossed greens in hand gets drizzled first: the drizzle is the
+    // finishing step, so it wins over starting another toss.
+    const dIdx = hand.findIndex(NB.canDrizzle);
+    if (dIdx >= 0) {
+      state.cold = { active: true, kind: 'drizzle', item: hand.splice(dIdx, 1)[0], t: 0, dur: NB.DRIZZLE_SECONDS };
+      NB.playSound('plate');
+      return;
+    }
     const idx = hand.findIndex(NB.canToss);
     if (idx < 0) {
       NB.addToast(state, 'Bring chopped Greens here to toss', '#ffb347');
       return;
     }
-    state.cold = { active: true, item: hand.splice(idx, 1)[0], t: 0, dur: NB.COLD_SECONDS };
+    state.cold = { active: true, kind: 'toss', item: hand.splice(idx, 1)[0], t: 0, dur: NB.COLD_SECONDS };
     NB.playSound('chop');
     return;
   }
@@ -290,12 +306,20 @@ NB.updateKitchen = function (state, dt) {
   if (state.pull.active) state.pull.t += dt;
   // Tossing job: chopped greens in chili oil and sesame dressing.
   // A plain timer like chopping — when it finishes, the greens are
-  // tossed and back in hand, ready to plate.
+  // tossed and back in hand, ready to plate. The drizzle job is the
+  // same shape: tossed greens in, chili oil over them, drizzled
+  // greens back in hand.
   if (state.cold.active) {
     state.cold.t += dt;
     if (state.cold.t >= state.cold.dur) {
       const item = state.cold.item;
-      item.prep = 'tossed';
+      const kind = state.cold.kind || 'toss';
+      if (kind === 'drizzle') {
+        item.prep = 'drizzled';
+        NB.addToast(state, 'Chili oil drizzled!', '#e5383b');
+      } else {
+        item.prep = 'tossed';
+      }
       if (state.cook.hand.length < NB.HAND_SLOTS) state.cook.hand.push(item);
       state.cold = { active: false, item: null, t: 0, dur: NB.COLD_SECONDS };
       NB.playSound('chopDone');
