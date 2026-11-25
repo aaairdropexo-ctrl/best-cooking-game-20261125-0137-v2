@@ -117,6 +117,79 @@ Order injection via `window.__game` was used ONLY to choose which dish
 is ordered in the playtest; every station interaction was a real mouse
 click and every payout was read from live state.
 
+## Final iteration round (25 Nov 2026, ~17:15–19:00 WIB) — the jury's 3 fixes, answered
+
+A fresh same-model jury reading (GLM-5.3-flash, 4 screenshots + source
+outline, free/glm-5.3-flash) scored the cold-branch version 5/5, 4/5,
+4/5, **3/5, 3/5** and said it WINS against a generic bistro by 3/5 —
+with one most-important fix, verbatim: *"make the plate draw the
+actual assembled components in distinct, appetizing form, so a glance
+at plating tells you which dish is on it."* This round builds exactly
+the 3 items that reading named, nothing else:
+- **Plates redrawn as assembled dishes (criterion 4):** the plate no
+  longer shows ingredient icons in a circle. Each dish is drawn from
+  its own components with canvas primitives only — broth pool + noodle
+  strands (Golden Broth Bowl), noodle nest + chicken slices + chili
+  rings (Midnight Noodles), nest + leaves + fried egg (Garden
+  Noodles), nest + chicken + egg + chili (Ember Chicken Bowl), broth +
+  nest + chicken + leaves (House Special), leaves + chili rings +
+  chili-oil drizzle + sesame dots (Sesame Greens Bowl). A partial
+  plate draws only the components on it. All six plates were
+  eye-checked as crops: six distinct silhouettes at a glance.
+- **Third component for the cold dish (depth):** chili-oil drizzle at
+  the cold counter AFTER the 1.8s toss — one short 1.2s job, no new
+  minigame. Sesame Greens Bowl is now 3 components (chili chopped +
+  greens tossed + greens drizzled) like the hot dishes: the ticket
+  shows 3 chips (the drizzle chip carries a red oil-drop badge so the
+  two greens chips never read as one), the title card lists 3 lines,
+  the plate shows 3 groups. The drizzle wins over a new toss when
+  tossed greens are in hand. Price kept at $18 (no price changes in
+  this round, per the brief) — the dish is now 3 components at the old
+  price, slightly underpaid vs hot 3-component dishes ($22), but the
+  VIP tip + combo still make it pay.
+- **VIP portrait 26px → 44px, bubble 14px → 18px (measured):** the
+  portrait spans the bubble's full height; the ticket's chips shrink
+  40 → 34px tall for VIP tickets only so nothing crowds. The bubble
+  text is the largest size that FITS its width, measured in the
+  browser (fit-to-width, 20px down to 13px): the staged sentence
+  "for the night-shift nurse" fits at 18px (203px of 216px), "the
+  usual, extra hot" at 20px, "back again — same as always" at 15px.
+  20px does NOT fit the 25-character sentence in a 270px ticket — 18px
+  is the honest max, not a failure to try. No overlap: the portrait
+  clears the chips by 2px and the heat bar by 1px; the bar is 8px tall
+  on VIP tickets.
+- **Shots 2–4 are still one journey:** chop → mid-drizzle (chili +
+  tossed greens on the plate, second greens mid-drizzle at the cold
+  counter, red ring + "DRIZZLING…") → serve (+$45 PERFECT). Cover
+  shows the full 3-component salad on the plate.
+- **Defect found by the sandbox, fixed:** the screenshots folder held
+  a stale 5th file, `3-wok.jpg` (leftover from the previous round's
+  rename to `3-cold.jpg`), and `main.ts` refused to build the dossier
+  (exit 1, "screenshots/ holds 5 files, over the 4 caps allow"). The
+  stale file is deleted; the folder now holds exactly the 4 shots in
+  shots.json.
+
+New forecast: dev win rate **0.63–0.75** (was 0.62–0.74), still
+provisional, NOT a result. Top-40 cut still plausible; top 10 still a
+stretch. Why only a small bump: the plate redraw answers the jury's
+single most-important fix verbatim and the cold dish is now a genuine
+3-component dish — but the field is ~4,600 entries, the board is
+blind, and provisional rates collapse −35/−40 in the final heat. No
+promise of #1, no promise of a paid place. What is measured, not
+guessed: the playtest passes **7/7** — cold 3-component dish served
+end to end with real clicks and paid **$21** (18 + 3 patience bonus;
+the 3-component flow takes ~4s longer than the old 2-component one,
+so the bonus is 3 not 4), wok never touched during it; hot regression
+(midnight noodles) served and paid **$28** (22 + 3 bonus, ×1.1 combo);
+burn path (burnt noodles binned); shift end + R restart; zero console
+errors; all 4 shots re-rendered (171,355 / 156,414 / 162,688 /
+165,085 bytes, all under the 256 KiB cap); main.ts exits 0 ×2 in a
+read-only sandbox copy with a byte-identical dossier (sha256
+dc7d4b8e9303265619fa81c8d6b79716ab53414f1e625df8f3174651c2febc06).
+Order injection via `window.__game` was used ONLY to choose which
+dish is ordered in the playtest; every station interaction was a real
+mouse click and every payout was read from live state.
+
 ## Self-review (before reporting)
 
 Final polish round (25 Nov 2026, ~18:00 WIB) — re-checked with my own
@@ -159,6 +232,54 @@ eyes at full size, 768px AND 300px:
    sandbox run exits 0 twice with a byte-identical dossier (sha256
    6c24a1a4…f4482), and all 4 shots are real renders under the 256 KiB
    cap.
+
+Final iteration round (25 Nov 2026, ~18:00–19:00 WIB) — re-checked
+with my own eyes at full size, 768px AND 300px:
+1. **Is this weird?** No. Cover at 768px: gold VIP ticket (bigger
+   nurse portrait with cap + red cross, bubble "for the night-shift
+   nurse / something cool, please" clearly bigger, 3 chips with the
+   red-drop badge on the third), plate showing a real salad (green
+   leaves, red chili rings, dark drizzle lines, white sesame dots),
+   cold counter "Toss greens · drizzle oil", "READY TO SERVE!", "DING!
+   Serve now". At 300px the gestalt holds: dark kitchen, gold VIP,
+   green plating panel, blue cold counter. No clipped text, no new
+   overlap in any of the 4 shots. Shots 2–4 read as one cold journey:
+   chop (greens on the board) → drizzle (red ring + "DRIZZLING…" at
+   the cold counter, 2 of 3 chips checked) → serve (full salad,
+   "+$45 PERFECT!"). The title screen's Sesame Greens card lists all
+   3 components and fits.
+2. **Is anything missing?** The jury's verbatim fix is answered (the
+   plate draws the assembled dish), the cold dish has 3 components,
+   the VIP face + bubble are bigger. What is still missing, honestly:
+   the bubble is 18px, not the 20–24px the brief hoped for — the
+   sentence is too long for the ticket width, measured, not guessed;
+   the portrait is 44px, not 48px — the slot is 136px tall and the
+   heat bar still needs its 8px; the chicken slices read a little like
+   brown beans (the pale stripe helps, but they are the weakest
+   drawing); the drizzle lines dominate the cold plate a touch (they
+   read as dressing, which is what they are). No second cold dish —
+   deliberately cut; the drizzle was cheaper for the same point.
+3. **Can it beat the top 5?** Unknown — the board is blind and hidden.
+   It can beat the starter house game on criterion 1 alone. Whether it
+   beats the best cooking entries depends on how readable the cover is
+   at 768px versus theirs. No promise of #1. What is now measured, not
+   guessed: the playtest passes 7/7 (cold $21 end to end, hot $28,
+   burn, shift end + restart, zero console errors), the sandbox run
+   exits 0 twice with a byte-identical dossier (sha256 dc7d4b8e…),
+   and all 4 shots are real renders under the 256 KiB cap.
+4. **Are the new plates really appetizing and readable at 300px, or
+   still flat?** Honestly, in between — clearly better than flat, not
+   yet a photograph. At 300px each plate reads as a distinct coloured
+   shape (amber soup, gold nest with red rings, green salad with red
+   rings, white egg with yellow yolk) — you can tell the dishes apart
+   in one glance, which is what the jury asked for. Up close the food
+   is still simple flat shapes: the noodle nest is three wavy lines,
+   the chicken is a brown ellipse with a stripe. It reads as a
+   stylised game dish, not a real meal. The sesame plate is the
+   strongest (leaves + rings + drizzle + dots read as a dressed
+   salad); the broth bowl is the weakest (the pool + strands are a
+   little plain). Good enough to answer the verdict; not good enough
+   to call the food beautiful.
 
 ## What would change this forecast
 
