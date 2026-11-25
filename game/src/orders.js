@@ -22,7 +22,7 @@ NB.newOrder = function (state) {
     patienceMax: patienceMax,
     value: dish.coins,
     vip: vip,
-    story: vip ? (state.vipServed > 0 ? 'back again — same as last night' : 'for the night-shift nurse') : null
+    story: vip ? (state.vipServed > 0 ? 'back again — same as always' : 'for the night-shift nurse') : null
   };
   return order;
 };
