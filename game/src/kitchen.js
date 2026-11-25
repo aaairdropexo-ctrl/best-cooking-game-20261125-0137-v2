@@ -54,6 +54,13 @@ NB.stationList = function () {
     id: 'pull', kind: 'pull', label: 'PULL & SIMMER',
     rect: L.pull, approach: { x: L.pull.x + L.pull.w / 2, y: L.pull.y + L.pull.h + 30 }
   });
+  // Cold counter: chili oil and sesame dressing, no wok. Chopped
+  // greens are tossed here — the cold path, a different route through
+  // the kitchen from every hot dish.
+  stations.push({
+    id: 'cold', kind: 'cold', label: 'COLD COUNTER',
+    rect: L.cold, approach: { x: L.cold.x + L.cold.w / 2, y: L.cold.y + L.cold.h + 30 }
+  });
   return stations;
 };
 
@@ -91,8 +98,14 @@ NB.canCook = function (item) {
   return false;
 };
 
+// Only chopped greens can be tossed: the cold counter turns them into
+// the sesame-dressed greens a cold order asks for.
+NB.canToss = function (item) {
+  return item.ing === 'greens' && item.prep === 'chopped';
+};
+
 NB.sendCookTo = function (state, station) {
-  if (state.chop.active || state.pull.active) return;
+  if (state.chop.active || state.pull.active || state.cold.active) return;
   state.cook.tx = station.approach.x;
   state.cook.ty = station.approach.y;
   state.cook.pending = station.id;
@@ -120,7 +133,7 @@ NB.useStation = function (state, st) {
     return;
   }
   if (st.kind === 'chop') {
-    if (state.chop.active) return;
+    if (state.chop.active || state.cold.active) return;
     const idx = hand.findIndex(NB.canChop);
     if (idx < 0) {
       NB.addToast(state, 'Nothing to chop — grab Chicken, Chili or Greens', '#ffb347');
@@ -161,7 +174,7 @@ NB.useStation = function (state, st) {
       NB.lockPull(state);
       return;
     }
-    if (state.chop.active) return;
+    if (state.chop.active || state.cold.active) return;
     const idx = hand.findIndex(function (it) { return it.ing === 'noodles' && it.prep === 'cooked'; });
     if (idx < 0) {
       NB.addToast(state, 'Bring cooked noodles here to pull', '#ffb347');
@@ -169,6 +182,17 @@ NB.useStation = function (state, st) {
     }
     state.pull = { active: true, item: hand.splice(idx, 1)[0], t: 0 };
     NB.playSound('sizzle');
+    return;
+  }
+  if (st.kind === 'cold') {
+    if (state.cold.active || state.chop.active) return;
+    const idx = hand.findIndex(NB.canToss);
+    if (idx < 0) {
+      NB.addToast(state, 'Bring chopped Greens here to toss', '#ffb347');
+      return;
+    }
+    state.cold = { active: true, item: hand.splice(idx, 1)[0], t: 0, dur: NB.COLD_SECONDS };
+    NB.playSound('chop');
     return;
   }
   if (st.kind === 'plate') {
@@ -264,6 +288,19 @@ NB.updateKitchen = function (state, dt) {
   }
   // Noodle pull: the needle keeps sweeping until the cook locks it.
   if (state.pull.active) state.pull.t += dt;
+  // Tossing job: chopped greens in chili oil and sesame dressing.
+  // A plain timer like chopping — when it finishes, the greens are
+  // tossed and back in hand, ready to plate.
+  if (state.cold.active) {
+    state.cold.t += dt;
+    if (state.cold.t >= state.cold.dur) {
+      const item = state.cold.item;
+      item.prep = 'tossed';
+      if (state.cook.hand.length < NB.HAND_SLOTS) state.cook.hand.push(item);
+      state.cold = { active: false, item: null, t: 0, dur: NB.COLD_SECONDS };
+      NB.playSound('chopDone');
+    }
+  }
   // Perfect-serve celebration: the plate slides and the popup lives
   // for half a second, then clears itself.
   if (state.serveFx) {
