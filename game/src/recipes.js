@@ -34,8 +34,9 @@ NB.finalPrep = function (ingId) {
 };
 
 // A carried item: { ing, prep } where prep is raw | chopped | cooked
-// | tossed | burnt. 'tossed' is the cold path: chopped greens mixed in
-// chili oil and sesame dressing at the cold counter.
+// | tossed | drizzled | burnt. 'tossed' is the cold path: chopped greens mixed in
+// chili oil and sesame dressing at the cold counter. 'drizzled' is the
+// cold path's finish: tossed greens with chili oil drizzled over them.
 NB.makeItem = function (ingId) {
   return { ing: ingId, prep: 'raw' };
 };
@@ -47,6 +48,7 @@ NB.itemLabel = function (item) {
   if (item.prep === 'raw') return ing.name;
   if (item.prep === 'chopped') return 'Chopped ' + ing.name;
   if (item.prep === 'tossed') return 'Tossed ' + ing.name;
+  if (item.prep === 'drizzled') return 'Drizzled ' + ing.name;
   return 'Cooked ' + ing.name;
 };
 
@@ -111,7 +113,8 @@ NB.DISHES = [
     cold: true,
     needs: [
       { ing: 'chili', prep: 'chopped' },
-      { ing: 'greens', prep: 'tossed' }
+      { ing: 'greens', prep: 'tossed' },
+      { ing: 'greens', prep: 'drizzled' }
     ]
   }
 ];
