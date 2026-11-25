@@ -16,9 +16,9 @@ orders against the clock while the dinner rush keeps escalating.
    at once: kitchen + order board (3 tickets) + ingredient crates on the
    counter + one dish mid-assembly on the plate + shift timer + a plate
    ready to serve (shot 4). Every shot is a real render of the game code.
-2. **Fun / depth** — 5 dishes from 6 ingredients, each with a different
-   prep path (none / chop / cook / chop+cook); 2 wok burners for parallel
-   cooking; burn risk if food sits too long; heat bars that cool as a
+2. **Fun / depth** — 6 dishes from 6 ingredients, each with a different
+   prep path (none / chop / cook / chop+cook / chop+toss-cold); 2 wok
+   burners for parallel cooking; burn risk if food sits too long; heat bars that cool as a
    dish waits + combo multiplier; spawn rate and patience tighten late
    in the shift. **Power-up:** one gold VIP ticket (30% chance after
    45s, only one at a time, 0.55× patience, $12 tip if served with
@@ -32,6 +32,19 @@ orders against the clock while the dinner rush keeps escalating.
    mechanic. Both are visible in the cover and in the shots.
    Dishes: Golden Broth Bowl, Midnight Noodles, Garden Noodles,
    Ember Chicken Bowl, House Special.
+   **Final polish:** a 6th dish that BRANCHES the recipes — Sesame
+   Greens Bowl ($18, cold): chop greens → toss in chili oil + sesame
+   dressing at a new COLD COUNTER (ceramic bowl, sesame bottle, "NO
+   WOK" pill), a 1.8s timer like chop, no new minigame; it never touches
+   the wok, so the player must choose hot vs cold per ticket. Cold
+   orders show a blue border + blue COLD pill + blue patience bar on
+   the order board (hot tickets stay red/gold), and the menu board lists
+   the cold dish with a blue "NO WOK" badge. The VIP ticket now carries
+   a small nurse portrait + a 2-line bubble inside the ticket ("for the
+   night-shift nurse" / "something cool, please" for a cold order,
+   "the usual, extra hot" for a hot one). Routing is a real commitment:
+   tossed greens do not satisfy a hot dish, raw greens are refused at
+   the counter, chopped greens are refused at the wok.
 3. **Feel / polish** — click-or-keyboard stations answer at once, chop and
    wok progress rings, a big central shift timer, a calm LAST CALL sign
    in the final stretch, steam curls, a noodle-drying rack, serve bell,
@@ -40,7 +53,10 @@ orders against the clock while the dinner rush keeps escalating.
    PERFECT!" popup, rising chime, steam burst — while a normal serve is
    just a small sound; a VIP arrival has its own two-note chime. Shots
    2–4 are one journey: the same VIP order travels chop → wok → serve,
-   its ticket in all three, progress visible.
+   its ticket in all three, progress visible. **Final polish:** shots
+   2–4 now follow the SAME cold VIP order — chop greens → toss at the
+   cold counter → perfect serve $45 — its ticket in all three with
+   progress (0/2 → 1/2 → 2/2).
 4. **Look / originality** — an original midnight noodle bar, not a burger
    joint clone: warm lamps, wood counters, hand-drawn canvas food icons,
    big readable labels. No commercial game copied. **Power-up:** one
@@ -61,6 +77,16 @@ orders against the clock while the dinner rush keeps escalating.
   the canvas edge and covered the station labels — replaced by a static
   popup below the hatch), the pull station's idle hint text (crossed the
   needle and the pot).
+- Cut/adapted in the final polish round: NOTHING was cut — all three
+  brief items shipped. Adapted, honestly: the cold counter sits below
+  the serve hatch, not literally beside the wok (only free rectangle
+  that covers no decor and moves no station); the dish name drops the
+  word "Cold" (COLD tag + blue border + "No Wok" badge already say it,
+  the full name overflowed the ticket); the VIP portrait + bubble live
+  inside the ticket, not above the slot (no room above any slot); the
+  staged serve-shot cook stands beside the plate, not at the hatch
+  approach (that spot puts him on the cold counter and hides its
+  label — in live play the overlap at the hatch is transient).
 - Kept: 5 dishes (the 5th costs little once the recipe table exists),
   2 burners (parallel cooking is the depth), burn risk (the tension).
 
