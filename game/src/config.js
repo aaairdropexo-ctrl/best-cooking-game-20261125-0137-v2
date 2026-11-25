@@ -29,6 +29,12 @@ NB.READY_WINDOW = 4.0;
 // dressing. A timer job like chopping — no timing minigame.
 NB.COLD_SECONDS = 1.8;
 
+// Chili-oil drizzle: the cold dish's third component. After the toss,
+// the same counter drizzles chili oil over tossed greens — one short
+// job after the toss, no minigame. Drizzled greens are a distinct
+// component from tossed greens.
+NB.DRIZZLE_SECONDS = 1.2;
+
 // Noodle pull: a timing sweep at the pull station. The needle sweeps a
 // firmness meter; locking it inside the green band pulls the noodles
 // perfectly. Perfect pulls pay a bonus at serve time.
