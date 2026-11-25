@@ -219,6 +219,7 @@ NB.render = function (state) {
   NB.drawSteam(state);
   NB.drawBin(state);
   NB.drawPull(state);
+  NB.drawCold(state);
   NB.drawMenu(state);
   NB.drawCrates(state);
   NB.drawCook(state);
@@ -260,6 +261,39 @@ NB.drawTopBar = function (state) {
   NB.text(ctx, 'x' + state.combo, 1150, 50, 32, comboColor, 'center', 'bold');
 };
 
+// The VIP's second bubble line: a short human continuation of her
+// sentence. A cold order gets the cool line, a hot order the usual.
+NB.vipBubbleLine = function (order) {
+  const dish = NB.dishById(order.dishId);
+  return dish && dish.cold ? 'something cool, please' : 'the usual, extra hot';
+};
+
+// Nurse Ana, the night-shift regular: a small portrait — dark hair,
+// white cap, red cross — so the VIP ticket has a face, not just a tab.
+NB.drawNursePortrait = function (ctx, x, y, r) {
+  const P = NB.PAL;
+  ctx.fillStyle = '#f2c89b';
+  ctx.beginPath();
+  ctx.arc(x, y + r * 0.15, r * 0.72, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#3a2530';
+  ctx.beginPath();
+  ctx.arc(x, y - r * 0.15, r * 0.75, Math.PI, 0);
+  ctx.fill();
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  ctx.arc(x, y - r * 0.55, r * 0.42, Math.PI, 0);
+  ctx.fill();
+  ctx.fillStyle = P.red;
+  ctx.fillRect(x - r * 0.09, y - r * 0.85, r * 0.18, r * 0.3);
+  ctx.fillRect(x - r * 0.25, y - r * 0.78, r * 0.5, r * 0.18);
+  ctx.fillStyle = '#241a12';
+  ctx.beginPath();
+  ctx.arc(x - r * 0.28, y + r * 0.15, r * 0.08, 0, Math.PI * 2);
+  ctx.arc(x + r * 0.28, y + r * 0.15, r * 0.08, 0, Math.PI * 2);
+  ctx.fill();
+};
+
 NB.drawBoard = function (state) {
   const ctx = state.ctx;
   const P = NB.PAL;
@@ -289,11 +323,13 @@ NB.drawBoard = function (state) {
     const urgent = order.patience < 12;
     // A VIP ticket is gold all over: dark gold fill, gold border, a tab
     // on top. It must read as special in one glance at 768px.
+    // A cold ticket is blue: blue border, blue COLD tag — the opposite
+    // pole of a hot ticket's red urgency.
     ctx.fillStyle = order.vip ? '#4a3517' : urgent ? '#4a2e22' : '#33232c';
     NB.roundRect(ctx, B.x + 12, y, B.w - 24, slotH - 12, 10);
     ctx.fill();
-    ctx.strokeStyle = order.vip ? P.gold : urgent ? P.ember : '#5a3a42';
-    ctx.lineWidth = order.vip ? 3 : 2;
+    ctx.strokeStyle = order.vip ? P.gold : dish.cold ? P.blue : urgent ? P.ember : '#5a3a42';
+    ctx.lineWidth = order.vip || dish.cold ? 3 : 2;
     NB.roundRect(ctx, B.x + 12, y, B.w - 24, slotH - 12, 10);
     ctx.stroke();
     if (order.vip) {
@@ -302,8 +338,17 @@ NB.drawBoard = function (state) {
       ctx.fill();
       NB.text(ctx, '★ VIP', B.x + B.w / 2, y + 1, 11, '#241a12', 'center', 'bold');
     }
-    NB.text(ctx, dish.name, B.x + 24, y + 24, 19, P.cream, 'left', 'bold');
-    NB.text(ctx, order.vip ? '$' + order.value + ' +TIP' : '$' + order.value, B.x + B.w - 26, y + 24, 19, P.gold, 'right', 'bold');
+    if (dish.cold) {
+      ctx.fillStyle = P.blue;
+      NB.roundRect(ctx, B.x + B.w - 58, y - 8, 46, 17, 8);
+      ctx.fill();
+      NB.text(ctx, 'COLD', B.x + B.w - 35, y + 1, 10, '#ffffff', 'center', 'bold');
+    }
+    // VIP names run a little smaller: the ticket also carries a
+    // portrait and a two-line bubble, so the name + price need room.
+    const nameSize = order.vip ? 16 : 19;
+    NB.text(ctx, dish.name, B.x + 24, y + 24, nameSize, P.cream, 'left', 'bold');
+    NB.text(ctx, order.vip ? '$' + order.value + ' +TIP' : '$' + order.value, B.x + B.w - 26, y + 24, nameSize, P.gold, 'right', 'bold');
     // Component chips.
     order.needs.forEach(function (need, k) {
       const cx = B.x + 30 + k * 64;
@@ -324,20 +369,36 @@ NB.drawBoard = function (state) {
         NB.text(ctx, '✓', cx + 20, cy - 15, 12, '#ffffff', 'center', 'bold');
       }
     });
-    // One human sentence on the ticket — the judge reads it. Big
-    // enough to survive the shrink to 768px.
+    // A VIP ticket carries a face and a two-line bubble: her portrait
+    // on the left, her sentence and its continuation beside it. Dark
+    // text on cream, big enough to survive the shrink to 768px.
+    let barY = y + 108;
+    let barH = 12;
     if (order.vip && order.story) {
-      NB.text(ctx, order.story, B.x + B.w / 2, y + 97, 16, P.gold, 'center', 'bold');
+      ctx.fillStyle = '#fff3dc';
+      NB.roundRect(ctx, B.x + 16, y + 88, B.w - 32, 32, 10);
+      ctx.fill();
+      ctx.strokeStyle = P.gold;
+      ctx.lineWidth = 2;
+      NB.roundRect(ctx, B.x + 16, y + 88, B.w - 32, 32, 10);
+      ctx.stroke();
+      NB.drawNursePortrait(ctx, B.x + 34, y + 104, 13);
+      NB.text(ctx, order.story, B.x + 54, y + 98, 14, '#241a12', 'left', 'bold');
+      NB.text(ctx, NB.vipBubbleLine(order), B.x + 54, y + 112, 14, '#6b4222', 'left', 'bold');
+      barY = y + 124;
+      barH = 10;
     }
     // Patience bar.
     const pf = NB.clamp(order.patience / order.patienceMax, 0, 1);
     ctx.fillStyle = '#1d1218';
-    NB.roundRect(ctx, B.x + 24, y + 108, B.w - 48, 12, 6);
+    NB.roundRect(ctx, B.x + 24, barY, B.w - 48, barH, 6);
     ctx.fill();
     // Heat bar: the dish is served hot and goes cold as it waits —
-    // gold while hot, cooling to slate when it has gone cold.
-    ctx.fillStyle = pf > 0.5 ? P.gold : pf > 0.25 ? P.amber : '#7a8a99';
-    NB.roundRect(ctx, B.x + 24, y + 108, (B.w - 48) * pf, 12, 6);
+    // gold while hot, cooling to slate when it has gone cold. A cold
+    // dish cools the other way: blue while fresh, slate when it waits
+    // too long.
+    ctx.fillStyle = dish.cold ? (pf > 0.5 ? P.blue : pf > 0.25 ? '#7aa8d8' : '#7a8a99') : pf > 0.5 ? P.gold : pf > 0.25 ? P.amber : '#7a8a99';
+    NB.roundRect(ctx, B.x + 24, barY, (B.w - 48) * pf, barH, 6);
     ctx.fill();
   }
   NB.text(ctx, 'Served: ' + state.served + '   Lost: ' + state.lost, B.x + B.w / 2, B.y + B.h - 14, 14, '#d8b48a', 'center', 'bold');
@@ -612,7 +673,71 @@ NB.drawPull = function (state) {
   // No idle hint: the label + meter say it, and the hint would cross the needle.
 };
 
-// The menu board: all five dishes in one place, so the depth reads in
+// The cold counter: chili oil and sesame dressing, no wok. A ceramic
+// bowl of bright greens, a sesame bottle, a NO WOK tag — the cold path
+// made visible. Quiet when idle, loud only while a toss is running.
+NB.drawCold = function (state) {
+  const ctx = state.ctx;
+  const P = NB.PAL;
+  const L = NB.LAYOUT.cold;
+  NB.stationGlow(state, { rect: L }, '#1e3a4c');
+  NB.text(ctx, 'COLD COUNTER', L.x + L.w / 2, L.y + 20, 15, P.cream, 'center', 'bold');
+  // The tag that says the branch: this station never touches a burner.
+  ctx.fillStyle = P.blue;
+  NB.roundRect(ctx, L.x + L.w / 2 - 26, L.y + 34, 52, 16, 8);
+  ctx.fill();
+  NB.text(ctx, 'NO WOK', L.x + L.w / 2, L.y + 43, 10, '#ffffff', 'center', 'bold');
+  // Ceramic bowl of bright greens, centre-left.
+  const bx = L.x + 58;
+  const by = L.y + 92;
+  ctx.fillStyle = '#f5efe2';
+  ctx.beginPath();
+  ctx.ellipse(bx, by, 44, 26, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = '#c9b896';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.ellipse(bx, by, 44, 26, 0, 0, Math.PI * 2);
+  ctx.stroke();
+  NB.drawIngredientIcon(ctx, 'greens', bx - 12, by - 6, 34);
+  NB.drawIngredientIcon(ctx, 'greens', bx + 12, by - 8, 30);
+  // Chili-oil drizzle: red drops over the greens.
+  ctx.fillStyle = P.chili;
+  [[-18, -14], [2, -18], [16, -10]].forEach(function (d) {
+    ctx.beginPath();
+    ctx.arc(bx + d[0], by + d[1], 3, 0, Math.PI * 2);
+    ctx.fill();
+  });
+  // Sesame bottle, right: amber bottle, white cap, white label band.
+  const sx = L.x + 150;
+  const sy = L.y + 92;
+  ctx.fillStyle = '#d8a04a';
+  NB.roundRect(ctx, sx - 15, sy - 22, 30, 44, 6);
+  ctx.fill();
+  ctx.fillStyle = '#fff3dc';
+  NB.roundRect(ctx, sx - 8, sy - 32, 16, 12, 3);
+  ctx.fill();
+  ctx.fillStyle = '#fff3dc';
+  NB.roundRect(ctx, sx - 15, sy - 8, 30, 14, 3);
+  ctx.fill();
+  NB.text(ctx, 'SESAME', sx, sy, 8, '#6b4222', 'center', 'bold');
+  if (state.cold.active && state.cold.item) {
+    // The toss runs in the bowl: the greens ride on top, the ring
+    // counts it down beside them.
+    NB.drawIngredientIcon(ctx, state.cold.item.ing, bx, by - 4, 40);
+    const f = NB.clamp(state.cold.t / state.cold.dur, 0, 1);
+    ctx.strokeStyle = P.teal;
+    ctx.lineWidth = 7;
+    ctx.beginPath();
+    ctx.arc(bx + 54, by, 18, -Math.PI / 2, -Math.PI / 2 + f * Math.PI * 2);
+    ctx.stroke();
+    NB.text(ctx, 'TOSSING…', L.x + L.w / 2, L.y + 132, 14, P.teal, 'center', 'bold');
+  } else {
+    NB.text(ctx, 'Toss: chopped Greens', L.x + L.w / 2, L.y + 132, 12, '#d8b48a', 'center', 'normal');
+  }
+};
+
+// The menu board: all six dishes in one place, so the depth reads in
 // one glance. Quiet by design — dark panel, small text — the cover's
 // moment stays LAST CALL, VIP, perfect plate.
 NB.drawMenu = function (state) {
@@ -630,6 +755,15 @@ NB.drawMenu = function (state) {
   NB.DISHES.forEach(function (dish, i) {
     const ry = M.y + 32 + i * 14;
     NB.text(ctx, dish.name, M.x + 12, ry, 12, P.cream, 'left', 'normal');
+    if (dish.cold) {
+      // The badge that says the branch: this dish never sees the wok.
+      const nw = ctx.measureText(dish.name).width;
+      const px = M.x + 12 + nw + 8;
+      ctx.fillStyle = P.blue;
+      NB.roundRect(ctx, px, ry - 7, 48, 13, 6);
+      ctx.fill();
+      NB.text(ctx, 'NO WOK', px + 24, ry + 1, 9, '#ffffff', 'center', 'bold');
+    }
     NB.text(ctx, '$' + dish.coins, M.x + M.w - 12, ry, 12, P.gold, 'right', 'bold');
   });
 };
@@ -728,8 +862,8 @@ NB.drawCook = function (state) {
       NB.text(ctx, '✕', ix, c.y - 58, 16, P.red, 'center', 'bold');
     }
   });
-  // Chopping motion lines.
-  if (state.chop.active) {
+  // Chopping / tossing motion lines.
+  if (state.chop.active || state.cold.active) {
     ctx.strokeStyle = 'rgba(255,255,255,0.7)';
     ctx.lineWidth = 3;
     ctx.beginPath();
@@ -776,7 +910,7 @@ NB.drawHint = function (state) {
   const P = NB.PAL;
   ctx.fillStyle = '#1d1218';
   ctx.fillRect(0, 652, NB.W, 68);
-  NB.text(ctx, 'Click a station to work it  ·  WASD / Arrows walk  ·  Space use station  ·  1-6 grab ingredient  ·  R restart  ·  M sound ' + (state.muted ? 'OFF' : 'ON'), NB.W / 2, 686, 16, '#d8b48a', 'center', 'normal');
+  NB.text(ctx, 'Click a station to work it  ·  WASD / Arrows walk  ·  Space use station  ·  1-6 grab ingredient  ·  Cold counter tosses greens  ·  R restart  ·  M sound ' + (state.muted ? 'OFF' : 'ON'), NB.W / 2, 686, 16, '#d8b48a', 'center', 'normal');
 };
 
 // The final stretch, reframed as last call — calm bar language in the
@@ -795,8 +929,8 @@ NB.drawTitle = function (state) {
   NB.text(ctx, '— MIDNIGHT NOODLE BAR —', NB.W / 2, 140, 22, P.cream, 'center', 'bold');
   NB.text(ctx, 'You run a tiny noodle bar after dark. Chop, wok, plate and serve', NB.W / 2, 178, 19, '#d8b48a', 'center', 'normal');
   NB.text(ctx, 'before hungry customers walk away.', NB.W / 2, 202, 19, '#d8b48a', 'center', 'normal');
-  // Recipe cards.
-  const cardW = 224;
+  // Recipe cards. Six dishes now: narrower cards so they all fit.
+  const cardW = 190;
   const gap = 16;
   const x0 = (NB.W - (NB.DISHES.length * cardW + (NB.DISHES.length - 1) * gap)) / 2;
   NB.DISHES.forEach(function (dish, i) {
@@ -817,7 +951,7 @@ NB.drawTitle = function (state) {
       NB.text(ctx, ing.name + ' · ' + need.prep, x + 52, y + 84 + k * 30, 14, '#d8b48a', 'left', 'normal');
     });
   });
-  NB.text(ctx, 'HOW TO PLAY:  1. Grab ingredients from the crates   2. Chop, then wok them   3. Plate what the order asks   4. Serve before patience runs out', NB.W / 2, 482, 17, P.cream, 'center', 'bold');
+  NB.text(ctx, 'HOW TO PLAY:  1. Grab from the crates   2. Chop, then wok — or toss greens cold   3. Plate the order   4. Serve before patience runs out', NB.W / 2, 482, 17, P.cream, 'center', 'bold');
   const blink = 0.55 + 0.45 * Math.sin(state.elapsed * 4);
   ctx.globalAlpha = blink;
   NB.text(ctx, 'CLICK OR PRESS ENTER TO START', NB.W / 2, 552, 30, P.gold, 'center', 'bold');
