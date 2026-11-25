@@ -106,11 +106,12 @@ NB.stageShot = function (state, shot) {
   state.shot = shot;
   state.spawnIn = 5;
   if (shot === 'cover') {
-    // LAST CALL: one moment — the VIP at two of two, her cold dish
-    // ready on the plate, noodles steaming in the wok for the next
-    // ticket, the cold counter dressed and waiting beside the serve
-    // window. The cover's cold branch must read in one glance: blue
-    // COLD ticket, No Wok badge on the menu, cold counter.
+    // LAST CALL: one moment — the VIP at three of three, her cold dish
+    // ready on the plate (leaves, chili rings, chili-oil drizzle and
+    // sesame), noodles steaming in the wok for the next ticket, the
+    // cold counter dressed and waiting beside the serve window. The
+    // cover's cold branch must read in one glance: blue COLD ticket,
+    // No Wok badge on the menu, cold counter.
     state.elapsed = 112;
     state.timeLeft = 38;
     state.coins = 86;
@@ -118,14 +119,15 @@ NB.stageShot = function (state, shot) {
     state.served = 4;
     state.lost = 1;
     state.orders = [
-      NB.stagedOrder(state, 'sesame-greens', 2, 0.55, true),
+      NB.stagedOrder(state, 'sesame-greens', 3, 0.55, true),
       NB.stagedOrder(state, 'broth-bowl', 0, 0.8),
       NB.stagedOrder(state, 'garden-noodles', 0, 0.9)
     ];
     state.plateFor = state.orders[0].id;
     state.plate.items = [
       { ing: 'chili', prep: 'chopped' },
-      { ing: 'greens', prep: 'tossed' }
+      { ing: 'greens', prep: 'tossed' },
+      { ing: 'greens', prep: 'drizzled' }
     ];
     state.cook.x = 860;
     state.cook.y = 335;
@@ -148,8 +150,9 @@ NB.stageShot = function (state, shot) {
     state.cook.hand = [];
     state.chop = { active: true, item: { ing: 'greens', prep: 'raw' }, t: 0.8, dur: NB.CHOP_SECONDS };
   } else if (shot === 'wok') {
-    // Mid-journey: the VIP's chili is chopped and on the plate, her
-    // greens are mid-toss at the cold counter, and noodles steam in
+    // Mid-journey: the VIP's chili and tossed greens are on the plate
+    // (two of three), and the second tossed greens are mid-drizzle at
+    // the cold counter — red ring, DRIZZLING… — while noodles steam in
     // wok 1 for the next hot ticket.
     state.elapsed = 61;
     state.timeLeft = 89;
@@ -157,17 +160,18 @@ NB.stageShot = function (state, shot) {
     state.combo = 2;
     state.served = 2;
     state.orders = [
-      NB.stagedOrder(state, 'sesame-greens', 1, 0.7, true),
+      NB.stagedOrder(state, 'sesame-greens', 2, 0.7, true),
       NB.stagedOrder(state, 'garden-noodles', 0, 0.85)
     ];
     state.plateFor = state.orders[0].id;
     state.plate.items = [
-      { ing: 'chili', prep: 'chopped' }
+      { ing: 'chili', prep: 'chopped' },
+      { ing: 'greens', prep: 'tossed' }
     ];
     state.cook.x = 1153;
     state.cook.y = 476;
     state.cook.hand = [];
-    state.cold = { active: true, item: { ing: 'greens', prep: 'chopped' }, t: 1.1, dur: NB.COLD_SECONDS };
+    state.cold = { active: true, kind: 'drizzle', item: { ing: 'greens', prep: 'tossed' }, t: 0.6, dur: NB.DRIZZLE_SECONDS };
     state.woks[0].item = { ing: 'noodles', state: 'cooking', t: 1.8, readyT: 0 };
   } else if (shot === 'serve') {
     // The payoff: the VIP's cold plate is complete, and the serve is
@@ -179,13 +183,14 @@ NB.stageShot = function (state, shot) {
     state.combo = 5;
     state.served = 6;
     state.orders = [
-      NB.stagedOrder(state, 'sesame-greens', 2, 0.6, true),
+      NB.stagedOrder(state, 'sesame-greens', 3, 0.6, true),
       NB.stagedOrder(state, 'broth-bowl', 0, 0.9)
     ];
     state.plateFor = state.orders[0].id;
     state.plate.items = [
       { ing: 'chili', prep: 'chopped' },
-      { ing: 'greens', prep: 'tossed' }
+      { ing: 'greens', prep: 'tossed' },
+      { ing: 'greens', prep: 'drizzled' }
     ];
     // Beside the plate, in the gap between the wok and plating
     // panels: the cook at the hatch approach (1193, 320) would stand
